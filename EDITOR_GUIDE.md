@@ -6,7 +6,7 @@ You do not need to edit XML by hand.
 
 ## 1. Open the Editor
 
-1. Open `index.html` in your web browser.
+1. Open `https://yuecui.github.io/fiction-annotation-editor/` in your web browser.
 2. Click **Choose File**.
 3. Select the XML file you want to review.
 4. Wait for the editor to load the character and dialogue information.
