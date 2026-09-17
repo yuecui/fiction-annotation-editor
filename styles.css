@@ -28,3 +28,35 @@
       border-radius: 4px;
       cursor: pointer;
     }
+
+
+.feature-help-btn {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  border: 1px solid #94a3b8;
+  background: #ffffff;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.feature-help-btn:hover,
+.feature-help-btn:focus-visible {
+  background: #eef2ff;
+  color: #4338ca;
+  border-color: #6366f1;
+  outline: none;
+}
+
+.feature-help-btn-small {
+  width: 1rem;
+  height: 1rem;
+  font-size: 0.65rem;
+}

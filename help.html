@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fiction Annotation Editor — Help</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800">
+  <header class="bg-slate-800 text-white shadow-md sticky top-0 z-10">
+    <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+      <div>
+        <h1 class="text-xl font-bold">Editor Help</h1>
+        <p class="text-sm text-slate-300">Fiction Annotation Editor</p>
+      </div>
+      <a href="index.html" class="text-sm font-semibold bg-slate-700 hover:bg-slate-600 border border-slate-600 px-3 py-1.5 rounded-lg">
+        Return to Editor
+      </a>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto p-6 md:p-8">
+    <article id="help-content" class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 md:p-10 prose prose-slate max-w-none">
+      <p class="text-slate-500">Loading editor guide…</p>
+    </article>
+  </main>
+
+  <script>
+    async function loadEditorGuide() {
+      const container = document.getElementById('help-content');
+
+      try {
+        const response = await fetch('editor.md', { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`Could not load editor.md (${response.status})`);
+        }
+
+        const markdown = await response.text();
+        container.innerHTML = marked.parse(markdown);
+      } catch (error) {
+        container.innerHTML = `
+          <h2 class="text-xl font-bold mb-3">Unable to load the help guide</h2>
+          <p class="mb-3">The help page reads <code>editor.md</code>. It works normally when the project is served through GitHub Pages or another web server.</p>
+          <p class="mb-3">If you opened these files directly from your computer, your browser may block local file access.</p>
+          <p><a class="text-indigo-600 underline" href="editor.md" target="_blank" rel="noopener noreferrer">Open editor.md directly</a></p>
+          <p class="mt-4 text-sm text-slate-500">${error.message}</p>
+        `;
+      }
+    }
+
+    loadEditorGuide();
+  </script>
+</body>
+</html>
