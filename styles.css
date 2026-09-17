@@ -60,3 +60,14 @@
   height: 1rem;
   font-size: 0.65rem;
 }
+
+
+/* Prevent browser-wide horizontal scrolling in the dialogue workspace. */
+#view-dialogue,
+#reader-pane {
+  min-width: 0;
+}
+
+#reader-pane {
+  overflow-x: hidden;
+}

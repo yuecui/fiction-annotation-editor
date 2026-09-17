@@ -27,7 +27,7 @@ fiction-annotation-editor/
 ├── app.js              # XML parsing and editing logic
 ├── app.txt             # Plain-text copy of app.js
 ├── README.md           # Developer documentation
-└── EDITOR_GUIDE.md     # Interface guide for editors
+└── editor.md     # Interface guide for editors
 ```
 
 ## Running the Application
@@ -249,7 +249,7 @@ node --check app.js
 Instructions intended for nontechnical editors are kept separately in:
 
 ```text
-EDITOR_GUIDE.md
+editor.md
 ```
 
 That file focuses on how to use the interface rather than implementation details.

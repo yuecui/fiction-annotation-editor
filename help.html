@@ -31,9 +31,9 @@
       const container = document.getElementById('help-content');
 
       try {
-        const response = await fetch('EDITOR_GUIDE.md', { cache: 'no-store' });
+        const response = await fetch('editor.md', { cache: 'no-store' });
         if (!response.ok) {
-          throw new Error(`Could not load EDITOR_GUIDE.md (${response.status})`);
+          throw new Error(`Could not load editor.md (${response.status})`);
         }
 
         const markdown = await response.text();
@@ -41,9 +41,9 @@
       } catch (error) {
         container.innerHTML = `
           <h2 class="text-xl font-bold mb-3">Unable to load the help guide</h2>
-          <p class="mb-3">The help page reads <code>EDITOR_GUIDE.md</code>. It works normally when the project is served through GitHub Pages or another web server.</p>
+          <p class="mb-3">The help page reads <code>editor.md</code>. It works normally when the project is served through GitHub Pages or another web server.</p>
           <p class="mb-3">If you opened these files directly from your computer, your browser may block local file access.</p>
-          <p><a class="text-indigo-600 underline" href="EDITOR_GUIDE.md" target="_blank" rel="noopener noreferrer">Open EDITOR_GUIDE.md directly</a></p>
+          <p><a class="text-indigo-600 underline" href="editor.md" target="_blank" rel="noopener noreferrer">Open editor.md directly</a></p>
           <p class="mt-4 text-sm text-slate-500">${error.message}</p>
         `;
       }

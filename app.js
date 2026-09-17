@@ -456,7 +456,21 @@ let activeXmlDoc = null;
       const targetElem = document.querySelector(`q[data-xml-id="${xmlId}"]`);
       if (targetElem) {
         targetElem.classList.add('dialogue-active');
-        targetElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Scroll only the reading pane vertically. Using scrollIntoView() can cause
+        // Chrome to horizontally scroll the whole flex layout and hide the sidebar.
+        const readerPane = document.getElementById('reader-pane');
+        if (readerPane) {
+          const paneRect = readerPane.getBoundingClientRect();
+          const targetRect = targetElem.getBoundingClientRect();
+          const targetCenterWithinPane = (targetRect.top - paneRect.top) + (targetRect.height / 2);
+          const nextScrollTop = readerPane.scrollTop + targetCenterWithinPane - (readerPane.clientHeight / 2);
+          readerPane.scrollTo({
+            top: Math.max(0, nextScrollTop),
+            behavior: 'smooth'
+          });
+        }
+
         document.getElementById('selected-dialogue-preview').textContent = `"${targetElem.textContent}"`;
         displayDialogueMetadata(xmlId);
       }
