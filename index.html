@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fiction XML Dialogue & Gender Resolver</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col font-sans">
+
+  <header class="bg-slate-800 text-white p-4 shadow-md flex justify-between items-center shrink-0">
+    <h1 class="text-xl font-bold tracking-wide">Fiction Text Editor</h1>
+    <div id="file-status" class="text-sm text-slate-300">No file loaded</div>
+  </header>
+
+  <div id="screen-upload" class="flex-1 flex flex-col items-center justify-center p-6">
+    <div class="bg-white p-8 rounded-xl shadow-md max-w-md w-full text-center border border-slate-200">
+      <h2 class="text-2xl font-bold mb-2 text-slate-800">Upload XML File</h2>
+      <p class="text-slate-500 text-sm mb-4">Select or drop a story XML file to begin resolving unknown genders and dialogue speakers.</p>
+      <div id="upload-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg text-left overflow-auto max-h-32"></div>
+      <input type="file" id="xml-input" accept=".xml" class="hidden">
+      <button onclick="document.getElementById('xml-input').click()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-6 rounded-lg shadow">
+        Choose File
+      </button>
+    </div>
+  </div>
+
+  <div id="screen-editor" class="hidden flex-1 flex flex-col min-h-0">
+    <div class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shadow-sm z-20 shrink-0">
+      <div class="flex items-center space-x-6">
+        <button id="tab-gender" type="button" onclick="switchStep('gender')" class="flex items-center space-x-2 font-medium pb-1 border-b-2 border-indigo-600 text-indigo-600">
+          <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">1</span>
+          <span>Character Genders</span>
+          <span id="badge-gender-count" class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-semibold">0</span>
+        </button>
+        <button id="tab-dialogue" type="button" onclick="switchStep('dialogue')" class="flex items-center space-x-2 font-medium pb-1 border-b-2 border-transparent text-slate-500 hover:text-slate-800">
+          <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs flex items-center justify-center font-bold">2</span>
+          <span>Dialogue Attribution</span>
+          <span id="badge-dialogue-count" class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-semibold">0</span>
+        </button>
+      </div>
+
+      <button type="button" onclick="exportUpdatedXML()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg flex items-center space-x-2 text-sm shadow">
+        <span>Export XML</span>
+      </button>
+    </div>
+
+    <!-- VIEW 1: Gender Resolution -->
+    <div id="view-gender" class="flex-1 p-8 max-w-4xl mx-auto w-full">
+      <div class="mb-6">
+        <h2 class="text-xl font-bold text-slate-800">Review Character Names & Genders</h2>
+        <p class="text-slate-500 text-sm">Review canonical names, aliases, and gender attributes before proceeding.</p>
+      </div>
+      <div id="gender-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      <div class="mt-8 mb-12 flex justify-end">
+        <button type="button" onclick="switchStep('dialogue')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-6 rounded-lg shadow">
+          Continue to Dialogue Attribution →
+        </button>
+      </div>
+    </div>
+
+    <!-- VIEW 2: Dialogue Attribution -->
+    <div id="view-dialogue" class="hidden flex-1 flex flex-col md:flex-row h-[calc(100vh-120px)] min-h-0 overflow-hidden">
+      <div class="w-full md:w-96 bg-white border-r border-slate-200 p-4 flex flex-col justify-between shadow-lg shrink-0 overflow-y-auto h-full z-10">
+        <div>
+          <div class="flex items-center justify-between border-b pb-3 mb-4">
+            <span id="dialogue-progress" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dialogue Focus</span>
+            <button type="button" onclick="focusNextUnresolved()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold px-2.5 py-1 rounded transition">
+              Skip / Next Unresolved &rarr;
+            </button>
+          </div>
+
+          <div id="selected-dialogue-preview" class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-slate-700 italic mb-4 min-h-[60px] flex items-center">
+            Click on a dialogue quote to assign a speaker.
+          </div>
+
+          <div class="mb-4 p-3 bg-indigo-50 border-2 border-indigo-200 rounded-xl shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-bold text-indigo-800">Select Speaker</label>
+              <button type="button" onclick="toggleNewCharacterModal()" class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-1 rounded hover:bg-emerald-100">
+                + Add Person / Alias
+              </button>
+            </div>
+
+            <input
+              type="text"
+              id="speaker-search"
+              placeholder="Type letters to find a person..."
+              oninput="renderSpeakerButtons()"
+              class="w-full mb-3 border border-indigo-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+
+            <div id="new-character-form" class="hidden mb-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg space-y-2">
+              <select id="new-char-action" onchange="updateNewCharacterFormMode()" class="w-full border rounded px-2 py-1.5 text-xs bg-white font-semibold text-slate-700">
+                <option value="person">Create a new person</option>
+                <option value="alias">Add alias to an existing person</option>
+              </select>
+
+              <div id="new-person-fields" class="space-y-2">
+                <input type="text" id="new-char-name" placeholder="Canonical name" class="w-full border rounded px-2 py-1 text-xs bg-white">
+                <select id="new-char-gender" class="w-full border rounded px-2 py-1 text-xs bg-white">
+                  <option value="unknown">Gender: Unknown</option>
+                  <option value="female">Gender: Female</option>
+                  <option value="male">Gender: Male</option>
+                  <option value="non-binary">Gender: Non-binary</option>
+                </select>
+              </div>
+
+              <div id="new-alias-fields" class="hidden space-y-2">
+                <select id="alias-person-select" class="w-full border rounded px-2 py-1.5 text-xs bg-white"></select>
+                <input type="text" id="new-alias-name" placeholder="Alias, e.g. Mr. Irwine" class="w-full border rounded px-2 py-1 text-xs bg-white">
+              </div>
+
+              <div class="flex space-x-2">
+                <button type="button" onclick="saveNewCharacterAction()" class="flex-1 bg-emerald-600 text-white font-bold py-1 text-xs rounded">Save</button>
+                <button type="button" onclick="toggleNewCharacterModal()" class="px-2 bg-slate-200 text-slate-600 text-xs rounded">Cancel</button>
+              </div>
+            </div>
+
+            <div id="speaker-buttons" class="space-y-2 max-h-[32vh] overflow-y-auto pr-1"></div>
+          </div>
+
+          <div id="dialogue-metadata-card" class="hidden mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-700">Assigned Speaker:</span>
+              <span id="meta-current-speaker" class="font-semibold text-indigo-600">None</span>
+            </div>
+            <div id="meta-details-view" class="pt-2 border-t border-slate-200 space-y-1 text-slate-600 font-mono">
+              <div><span class="font-sans font-bold text-slate-500">who:</span> <span id="xml-meta-who">-</span></div>
+              <div><span class="font-sans font-bold text-slate-500">cert:</span> <span id="xml-meta-cert">-</span></div>
+              <div><span class="font-sans font-bold text-slate-500">source:</span> <span id="xml-meta-source">-</span></div>
+              <div><span class="font-sans font-bold text-slate-500">resp:</span> <span id="xml-meta-resp">-</span></div>
+            </div>
+            <button id="btn-toggle-edit" type="button" onclick="enableTwoStepEditing()" class="w-full mt-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-1 rounded transition">
+              Enable Editing XML Attributes
+            </button>
+            <div id="meta-edit-form" class="hidden pt-3 border-t border-slate-200 space-y-2">
+              <div>
+                <label class="font-sans text-slate-500">Certainty (cert):</label>
+                <input type="text" id="input-meta-cert" class="w-full border rounded px-2 py-0.5 bg-white font-mono text-xs">
+              </div>
+              <div>
+                <label class="font-sans text-slate-500">Source:</label>
+                <input type="text" id="input-meta-source" class="w-full border rounded px-2 py-0.5 bg-white font-mono text-xs">
+              </div>
+              <div>
+                <label class="font-sans text-slate-500">Responsibility (resp):</label>
+                <input type="text" id="input-meta-resp" class="w-full border rounded px-2 py-0.5 bg-white font-mono text-xs">
+              </div>
+              <button type="button" onclick="saveAdvancedMetadata()" class="w-full bg-indigo-600 text-white font-semibold py-1 rounded mt-1">
+                Save Attribute Changes
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
+          <span>Unresolved remaining:</span>
+          <span id="counter-unresolved" class="font-bold text-amber-600 text-sm">0</span>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto h-full bg-amber-50/20 p-8 md:p-12" id="reader-pane">
+        <div id="reader-content" class="reader-view max-w-2xl mx-auto bg-white p-8 md:p-12 rounded-xl shadow-sm border border-slate-200"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

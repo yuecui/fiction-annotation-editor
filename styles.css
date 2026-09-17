@@ -1,0 +1,30 @@
+.reader-view p {
+      margin-bottom: 1.25rem;
+      line-height: 1.8;
+      font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+      font-size: 1.125rem;
+      color: #2d3748;
+    }
+    
+    q.dialogue-unresolved, quotation.dialogue-unresolved {
+      background-color: #fef08a;
+      border-bottom: 2px solid #eab308;
+      padding: 2px 4px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    q.dialogue-active, quotation.dialogue-active {
+      background-color: #fde047;
+      box-shadow: 0 0 0 3px #ca8a04;
+      border-radius: 4px;
+    }
+
+    q.dialogue-resolved, quotation.dialogue-resolved {
+      background-color: #dcfce7;
+      border-bottom: 2px solid #22c55e;
+      padding: 2px 4px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
