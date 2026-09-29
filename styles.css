@@ -71,3 +71,45 @@
 #reader-pane {
   overflow-x: hidden;
 }
+
+/* Normal editor pages use ordinary browser/page scrolling. */
+html, body {
+  min-height: 100%;
+}
+
+#view-gender {
+  overflow: visible;
+}
+
+/* Only Dialogue Attribution becomes a viewport-locked workspace.
+   This preserves normal whole-page scrolling on Character Genders while
+   keeping Chrome's reader-pane navigation reliable. */
+body.dialogue-workspace {
+  height: 100vh;
+  overflow: hidden;
+}
+
+body.dialogue-workspace #screen-editor {
+  height: calc(100vh - var(--editor-header-height, 0px));
+  min-height: 0;
+  overflow: hidden;
+}
+
+#view-dialogue {
+  min-height: 0;
+  overflow: hidden;
+}
+
+#reader-pane {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  overflow-anchor: none;
+  scroll-behavior: auto;
+  position: relative;
+}
+
+#reader-content {
+  position: relative;
+}

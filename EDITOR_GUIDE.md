@@ -33,6 +33,12 @@ Use the **Canonical Name** field when the person's main name needs correction.
 
 Do not replace the canonical name with a nickname or alternate spelling if that form should instead be an alias.
 
+### Remove a character
+
+Use **Remove Character** when a character entry should not remain in the XML.
+
+The editor asks for confirmation before deleting the character. If that character is already assigned as the speaker of one or more quotations, the confirmation shows how many quotations are affected. If you continue, those speaker assignments are returned to unresolved so the exported XML does not contain broken references to the removed person.
+
 ### Review aliases
 
 Aliases appear underneath the canonical name.

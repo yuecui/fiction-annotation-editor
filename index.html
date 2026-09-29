@@ -81,8 +81,8 @@
     </div>
 
     <!-- VIEW 2: Dialogue Attribution -->
-    <div id="view-dialogue" class="hidden flex-1 flex flex-col md:flex-row h-[calc(100vh-120px)] min-h-0 overflow-hidden">
-      <div class="w-full md:w-96 bg-white border-r border-slate-200 p-4 flex flex-col justify-between shadow-lg shrink-0 overflow-y-auto h-full z-10">
+    <div id="view-dialogue" class="hidden flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
+      <div class="w-full md:w-96 bg-white border-r border-slate-200 p-4 flex flex-col justify-between shadow-lg shrink-0 min-h-0 overflow-y-auto z-10">
         <div>
           <div class="flex items-center justify-between border-b pb-3 mb-4">
             <div class="flex items-center gap-1.5">
@@ -194,7 +194,7 @@
         </div>
       </div>
 
-      <div class="flex-1 min-w-0 overflow-y-auto overflow-x-hidden h-full bg-amber-50/20 p-8 md:p-12" id="reader-pane">
+      <div class="flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden bg-amber-50/20 p-8 md:p-12" id="reader-pane">
         <div id="reader-content" class="reader-view max-w-2xl mx-auto bg-white p-8 md:p-12 rounded-xl shadow-sm border border-slate-200"></div>
       </div>
     </div>
@@ -211,6 +211,9 @@
     </div>
   </div>
 
+  <script src="core.js"></script>
+  <script src="characters.js"></script>
+  <script src="dialogue.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
