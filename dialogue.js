@@ -197,6 +197,65 @@
       focusNextUnresolved();
     }
 
+    function markActiveQuotationNotDialogue() {
+      const xmlNode = getActiveDialogueXmlNode();
+      if (!xmlNode) {
+        alert('Select a quotation first.');
+        return;
+      }
+
+      const quoteText = (xmlNode.textContent || '').trim();
+      const preview = quoteText.length > 120 ? `${quoteText.slice(0, 117)}...` : quoteText;
+      const confirmed = confirm(
+        `Mark this quotation as not dialogue?\n\n“${preview}”\n\nThe <${xmlNode.nodeName}> tag will be removed, but its text and any content inside it will remain in the document.`
+      );
+      if (!confirmed) return;
+
+      // Remember the next unresolved quotation before changing the XML so the
+      // editor can continue from the same point in the document.
+      const dialogueNodes = Array.from(activeXmlDoc.querySelectorAll('q, quotation'));
+      const currentIndex = dialogueNodes.indexOf(xmlNode);
+      let nextUnresolvedId = null;
+      for (let i = currentIndex + 1; i < dialogueNodes.length; i++) {
+        const who = dialogueNodes[i].getAttribute('who') || '#unknown';
+        if (who === '#unknown') {
+          nextUnresolvedId = dialogueNodes[i].getAttribute('xml:id') || dialogueNodes[i].getAttribute('id');
+          if (nextUnresolvedId) break;
+        }
+      }
+      if (!nextUnresolvedId) {
+        for (let i = 0; i < currentIndex; i++) {
+          const who = dialogueNodes[i].getAttribute('who') || '#unknown';
+          if (who === '#unknown') {
+            nextUnresolvedId = dialogueNodes[i].getAttribute('xml:id') || dialogueNodes[i].getAttribute('id');
+            if (nextUnresolvedId) break;
+          }
+        }
+      }
+
+      // Unwrap <q>/<quotation>: move all child nodes into the parent at the
+      // same position, then remove only the quotation element itself.
+      const parent = xmlNode.parentNode;
+      if (!parent) return;
+      while (xmlNode.firstChild) {
+        parent.insertBefore(xmlNode.firstChild, xmlNode);
+      }
+      parent.removeChild(xmlNode);
+
+      activeDialogueId = null;
+      markDirty();
+      renderReaderStep();
+      updateBadges();
+      document.getElementById('dialogue-metadata-card').classList.add('hidden');
+      document.getElementById('selected-dialogue-preview').textContent = 'Quotation marked as not dialogue. Its text was preserved.';
+
+      if (nextUnresolvedId && document.querySelector(`q[data-xml-id="${nextUnresolvedId}"]`)) {
+        selectDialogue(nextUnresolvedId);
+      } else {
+        focusNextUnresolved();
+      }
+    }
+
     function getActiveDialogueXmlNode() {
       if (!activeDialogueId) return null;
 
