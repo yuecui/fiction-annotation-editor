@@ -89,9 +89,14 @@
               <span id="dialogue-progress" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dialogue Focus</span>
               <button type="button" class="feature-help-btn feature-help-btn-small" onclick="showFeatureHelp(event, 'dialogue')" aria-label="Help for dialogue focus">?</button>
             </div>
-            <button type="button" onclick="focusNextUnresolved()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold px-2.5 py-1 rounded transition">
-              Skip / Next Unresolved &rarr;
-            </button>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="focusPreviousUnresolved()" class="text-xs bg-slate-50 hover:bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded transition">
+                &larr; Previous Unresolved
+              </button>
+              <button type="button" onclick="focusNextUnresolved()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold px-2.5 py-1 rounded transition">
+                Skip / Next Unresolved &rarr;
+              </button>
+            </div>
           </div>
 
           <div id="selected-dialogue-preview" class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-slate-700 italic mb-2 min-h-[60px] flex items-center">
@@ -137,7 +142,7 @@
                   <option value="unknown">Gender: Unknown</option>
                   <option value="female">Gender: Female</option>
                   <option value="male">Gender: Male</option>
-                  <option value="non-binary">Gender: Non-binary</option>
+                  <option value="gender-ambiguous">Gender: Gender Ambiguous</option>
                 </select>
               </div>
 

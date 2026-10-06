@@ -54,7 +54,7 @@
                 <option value="unknown" ${char.gender === 'unknown' ? 'selected' : ''}>Unknown</option>
                 <option value="female" ${char.gender === 'female' ? 'selected' : ''}>Female</option>
                 <option value="male" ${char.gender === 'male' ? 'selected' : ''}>Male</option>
-                <option value="non-binary" ${char.gender === 'non-binary' ? 'selected' : ''}>Non-binary</option>
+                <option value="gender-ambiguous" ${(char.gender === 'gender-ambiguous' || char.gender === 'non-binary') ? 'selected' : ''}>Gender Ambiguous</option>
               </select>
               ${char.sexNode?.getAttribute('source') ? `<div class="text-[10px] text-slate-400 mt-1.5">Source: ${escapeHtml(char.sexNode.getAttribute('source'))}</div>` : ''}
             </div>

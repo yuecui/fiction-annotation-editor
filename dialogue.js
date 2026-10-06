@@ -167,6 +167,35 @@
       if (target) selectDialogue(target.getAttribute('data-xml-id'));
     }
 
+    function focusPreviousUnresolved() {
+      const allDialogues = Array.from(document.querySelectorAll('q[data-xml-id]'));
+      const unresolvedElements = allDialogues.filter(el => el.classList.contains('dialogue-unresolved'));
+
+      if (unresolvedElements.length === 0) {
+        document.getElementById('selected-dialogue-preview').textContent = "All dialogues are resolved! 🎉";
+        document.getElementById('dialogue-metadata-card').classList.add('hidden');
+        activeDialogueId = null;
+        return;
+      }
+
+      // Move backward from the currently active dialogue, wrapping to the end.
+      const currentIndex = activeDialogueId
+        ? allDialogues.findIndex(el => el.getAttribute('data-xml-id') === activeDialogueId)
+        : allDialogues.length;
+
+      let target = null;
+      for (let offset = 1; offset <= allDialogues.length; offset++) {
+        const index = (currentIndex - offset + allDialogues.length) % allDialogues.length;
+        const candidate = allDialogues[index];
+        if (candidate.classList.contains('dialogue-unresolved')) {
+          target = candidate;
+          break;
+        }
+      }
+
+      if (target) selectDialogue(target.getAttribute('data-xml-id'));
+    }
+
     function assignSpeakerToActiveDialogue(speakerId) {
       if (!activeDialogueId) return;
 
