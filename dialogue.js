@@ -64,7 +64,7 @@
               <span class="font-semibold text-slate-800">${escapeHtml(char.name)}</span>
               <span class="block text-[10px] text-slate-400">${escapeHtml(char.id)}</span>
             </span>
-            <span class="text-xs text-slate-500">${escapeHtml(char.gender)}</span>
+            <span class="text-xs text-slate-500">${escapeHtml(char.gender === 'non-binary' ? 'gender-ambiguous' : char.gender)}</span>
           </span>
           ${aliases}`;
         container.appendChild(btn);
@@ -168,8 +168,9 @@
     }
 
     function focusPreviousUnresolved() {
-      const allDialogues = Array.from(document.querySelectorAll('q[data-xml-id]'));
-      const unresolvedElements = allDialogues.filter(el => el.classList.contains('dialogue-unresolved'));
+      const unresolvedElements = Array.from(
+        document.querySelectorAll('#reader-content q[data-xml-id].dialogue-unresolved')
+      );
 
       if (unresolvedElements.length === 0) {
         document.getElementById('selected-dialogue-preview').textContent = "All dialogues are resolved! 🎉";
@@ -178,22 +179,28 @@
         return;
       }
 
-      // Move backward from the currently active dialogue, wrapping to the end.
+      // Navigate within the unresolved list itself. If the current quotation is
+      // resolved (or nothing is selected), go to the nearest previous unresolved
+      // quotation in document order, wrapping to the last unresolved item.
+      const allDialogues = Array.from(document.querySelectorAll('#reader-content q[data-xml-id]'));
       const currentIndex = activeDialogueId
         ? allDialogues.findIndex(el => el.getAttribute('data-xml-id') === activeDialogueId)
-        : allDialogues.length;
+        : -1;
 
       let target = null;
-      for (let offset = 1; offset <= allDialogues.length; offset++) {
-        const index = (currentIndex - offset + allDialogues.length) % allDialogues.length;
-        const candidate = allDialogues[index];
-        if (candidate.classList.contains('dialogue-unresolved')) {
-          target = candidate;
-          break;
+      if (currentIndex < 0) {
+        target = unresolvedElements[unresolvedElements.length - 1];
+      } else {
+        for (let i = currentIndex - 1; i >= 0; i--) {
+          if (allDialogues[i].classList.contains('dialogue-unresolved')) {
+            target = allDialogues[i];
+            break;
+          }
         }
+        if (!target) target = unresolvedElements[unresolvedElements.length - 1];
       }
 
-      if (target) selectDialogue(target.getAttribute('data-xml-id'));
+      selectDialogue(target.getAttribute('data-xml-id'));
     }
 
     function assignSpeakerToActiveDialogue(speakerId) {
