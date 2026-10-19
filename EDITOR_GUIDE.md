@@ -186,19 +186,11 @@ You do not need to enter this information yourself; the editor handles it automa
 
 ## 11. Export Your Work
 
-Click **Export XML** in the upper-right corner when you want to save your edits.
+Click **Save XML** in the upper-right corner when you want to save your edits.
 
-The browser downloads a new XML file with a name beginning with:
+The filename uses a single `_enriched` suffix: `story.xml` becomes `story_enriched.xml`, while `story_enriched.xml` stays `story_enriched.xml`. Repeated `_enriched` suffixes are removed.
 
-```text
-resolved_
-```
-
-For example:
-
-```text
-resolved_story.xml
-```
+In supported Chromium browsers, a Save dialog lets you select the existing enriched file in your local folder and confirm replacement. The editor reuses this destination for subsequent saves during this session. Browsers without file-writing support download the enriched file instead; manually replace the previous local copy if needed.
 
 The exported file includes your committed edits, including:
 

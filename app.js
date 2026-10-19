@@ -34,7 +34,13 @@
       document.getElementById('counter-unresolved').textContent = unresolvedDialogues;
     }
 
-    function exportUpdatedXML() {
+    function getResolvedFilename(filename) {
+      // The legacy export convention uses a resolved_ prefix, exactly once.
+      // Normalize files exported by older editor versions as well.
+      return `resolved_${filename.replace(/^(?:resolved_)+/i, '')}`;
+    }
+
+    async function exportUpdatedXML() {
       if (!activeXmlDoc) return;
 
       // If the metadata editor is currently open, treat the visible field values
@@ -76,13 +82,43 @@
       }
 
       const blob = new Blob([xmlString], { type: "application/xml;charset=utf-8" });
-      const link = document.createElement("a");
+      const outputName = getResolvedFilename(fileName);
+
+      // The upload <input> only grants read access. A browser cannot silently
+      // overwrite the uploaded file; the editor must ask for write permission.
+      if (typeof window.showSaveFilePicker === 'function') {
+        try {
+          if (!savedXmlFileHandle) {
+            savedXmlFileHandle = await window.showSaveFilePicker({
+              suggestedName: outputName,
+              types: [{ description: 'XML document', accept: { 'application/xml': ['.xml'] } }]
+            });
+          }
+          const writable = await savedXmlFileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          // The handle remembers the selected destination for subsequent saves.
+          fileName = savedXmlFileHandle.name;
+          markClean();
+          return;
+        } catch (error) {
+          // Cancellation and permission failures must not falsely mark edits saved.
+          if (error.name === 'AbortError') return;
+          console.error('XML save failed:', error);
+          alert(`Could not save XML: ${error.message || error}`);
+          return;
+        }
+      }
+
+      // Fallback for Safari/Firefox and contexts without the File System Access API.
+      // Browsers decide whether an existing download is replaced or renamed.
       const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
       link.href = objectUrl;
-      link.download = `resolved_${fileName}`;
+      link.download = outputName;
       document.body.appendChild(link);
       link.click();
-      markClean();
       link.remove();
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      // Download initiation does not confirm the file was saved/replaced.
     }

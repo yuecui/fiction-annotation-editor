@@ -1,5 +1,6 @@
 let activeXmlDoc = null;
     let fileName = "edited_fiction.xml";
+    let savedXmlFileHandle = null;
     let charactersList = [];
     let activeDialogueId = null;
     let hasUnsavedChanges = false;
@@ -32,7 +33,7 @@ let activeXmlDoc = null;
       },
       export: {
         title: 'Export XML',
-        text: 'Download a new XML file containing all saved edits made in this session. Export regularly, especially before closing or reloading the page. After export, the page treats the current work as saved.'
+        text: 'Save edits as resolved_filename.xml, without repeating the resolved_ prefix. On supported browsers, choose the existing local file to overwrite it; later saves reuse that file. Other browsers download an XML file, and you may need to replace the old copy manually. Export regularly before leaving.'
       }
     };
 
@@ -113,6 +114,7 @@ let activeXmlDoc = null;
       if (!file) return;
 
       fileName = file.name;
+      savedXmlFileHandle = null;
       document.getElementById('file-status').textContent = fileName;
       
       const reader = new FileReader();
