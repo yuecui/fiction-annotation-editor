@@ -1,273 +1,144 @@
 # Fiction Annotation Editor — Editor Guide
 
-This guide explains how to use the **Fiction Annotation Editor** to review character information and assign speakers to dialogue.
+Use this editor to review character information and assign speakers to dialogue. You do not need to edit XML by hand.
 
-You do not need to edit XML by hand.
+## 1. Start a session
 
-## 1. Open the Editor
+1. Open <https://yuecui.github.io/fiction-annotation-editor/> in your usual browser.
+2. Click **Choose File** and select the XML file you are working on.
+3. On first use, enter the name you want your work reports to use. The editor remembers it on this browser.
+4. Review the loaded character and dialogue information.
 
-1. Open `https://yuecui.github.io/fiction-annotation-editor/` in your web browser.
-2. Click **Choose File**.
-3. Select the XML file you want to review.
-4. Wait for the editor to load the character and dialogue information.
+Keep using the same browser and website address. Private browsing, clearing website data, or moving to another browser can remove the remembered identity and pending reports. Your XML remains a separate local file: save it regularly and reopen your latest exported copy when returning to work.
 
-The editor does **not** overwrite your original XML file. Your work stays in the browser until you export a new XML file.
+## 2. Review character names, aliases, and genders
 
-## 2. Review Character Information
+Open **Character Genders**. Its badge shows how many characters still have an unknown gender; it is not your reward count.
 
-The first tab is **Character Genders**.
+Use **Canonical Name** for the main name. Alternate spellings, titles, and nicknames belong in separate aliases. You can edit or remove an alias, or enter one and click **+ Alias**. Pressing Enter in the add-alias field also adds it.
 
-The number beside the tab tells you how many characters still have an unknown or unresolved sex/gender value.
+Use the **Sex / Gender** dropdown to select **Unknown**, **Female**, **Male**, or **Gender Ambiguous**. Correct existing values when necessary. A source, when present, appears below the field.
 
-Each character card may show:
+Use **Remove** only for a character entry that should not remain. The confirmation explains whether any speaker assignments are affected. Removing a referenced character returns those quotations to unresolved so the XML does not retain a broken speaker reference.
 
-- canonical name;
-- aliases;
-- XML ID;
-- sex/gender;
-- source of the sex/gender information.
+## 3. Select a quotation and assign its speaker
 
-### Edit the canonical name
+Open **Dialogue Attribution**. Yellow quotations are unresolved; green quotations already have a speaker. Click a highlighted quotation to focus it. The **Dialogue Focus** box shows the selected text.
 
-Use the **Canonical Name** field when the person's main name needs correction.
+Search in **Select Speaker** by canonical name, alias, or XML ID. Click the correct person's button to assign that speaker. The editor records a manual decision, removes stale automated confidence, and moves to the next unresolved quotation.
 
-Do not replace the canonical name with a nickname or alternate spelling if that form should instead be an alias.
+You can click a green quotation to correct its speaker too. The exported summary counts corrections separately from newly identified dialogue.
 
-### Remove a character
+## 4. Navigate or mark Not dialogue
 
-Use **Remove Character** when a character entry should not remain in the XML.
+Use **Skip / Next Unresolved →** when you want to move on without assigning a speaker. Use the previous-unresolved control to go back. If you are unsure, skip the quotation and return to it later.
 
-The editor asks for confirmation before deleting the character. If that character is already assigned as the speaker of one or more quotations, the confirmation shows how many quotations are affected. If you continue, those speaker assignments are returned to unresolved so the exported XML does not contain broken references to the removed person.
+If highlighted text should not be treated as dialogue, select it and use **Not dialogue**. Confirm the decision when asked. The quotation wrapper is removed while its text and inner content remain in the story. The exported XML also retains a review record so the decision can be inspected later.
 
-### Review aliases
+## 5. Add a person or alias
 
-Aliases appear underneath the canonical name.
+Click **+ Add Person / Alias** when the speaker list needs an addition.
 
-You can:
+- For a missing person, choose **Create a new person**, enter the canonical name and gender if known, and save. The new person becomes available as a speaker.
+- For an existing person with a missing name variant, choose **Add alias to an existing person**, select the person, enter the alias, and save.
 
-- edit an alias;
-- remove an alias;
-- add a new alias.
+Search existing names and aliases before creating another person to avoid duplicates.
 
-Use aliases for alternate forms of the same person's name, for example:
+## 6. Review advanced metadata when needed
 
-```text
-Adolphus Irwine
-Irwine
-Mester Irwine
-Mr. Irwine
-Rev. Adolphus Irwine
-```
+The selected quotation can show `who`, `cert`, `source`, and `resp`. Normal work usually only requires selecting a speaker.
 
-### Add an alias
+Use **Enable Editing XML Attributes** when you intentionally need to change the additional fields. Click **Save Attribute Changes** to commit them. These edits are included in XML, but do not add reward points.
 
-Type the new alias in the alias field and use **+ Alias**.
+## 7. Save your XML
 
-You can also press **Enter** after typing the alias.
+Click **Save XML** to export the current document. The filename has exactly one `resolved_` prefix:
 
-### Review sex/gender
+| Loaded filename | Suggested export filename |
+| --- | --- |
+| `story.xml` | `resolved_story.xml` |
+| `resolved_story.xml` | `resolved_story.xml` |
+| `resolved_resolved_story.xml` | `resolved_story.xml` |
 
-Use the **Sex / Gender** dropdown to correct the value when necessary.
+In supported browsers, choose a local destination in the Save dialog. You can select the existing resolved file and confirm replacement. Later saves during that page session reuse the selected destination. Cancelling the dialog leaves your work available for the next save.
 
-If a source is available, it is shown below the field so you can see where the existing value came from.
+Other browsers start a download. The browser may add a number to the filename if a copy already exists. Check the new downloaded XML and replace the previous copy yourself if needed. **Download started** does not confirm that the browser completed the save.
 
-## 3. Open Dialogue Attribution
+Saving includes name and alias changes, gender decisions, new people, speaker assignments, Not dialogue decisions, and advanced metadata. Sending a work report does not save or back up the XML.
 
-Click the **Dialogue Attribution** tab.
+## 8. Review the celebration and summary
 
-The number beside this tab shows how many quotations still need a speaker assignment.
+After export, a short celebration accompanies a summary of this batch's work. You can skip the animation and continue immediately. The summary has five categories:
 
-In the reading pane:
+| Category | What counts |
+| --- | --- |
+| Genders marked | An unknown gender receives a value |
+| Genders corrected | An existing gender value is changed |
+| Dialogues identified | An unresolved quotation receives a speaker |
+| Dialogues corrected | An existing speaker assignment is changed |
+| Not dialogue | A quotation is excluded from dialogue |
 
-- unresolved dialogue is highlighted in yellow;
-- resolved dialogue is highlighted in green.
+Each counted item earns **1 XP**. The editor compares the final result with the state at your previous export. Existing work in the loaded file does not count as newly completed work.
 
-## 4. Select a Dialogue
+Examples:
 
-Click any highlighted quotation in the reading pane.
+- Unknown → Male → Female before one export counts as one gender marked.
+- Male → Female → Male before one export counts as zero because the final value did not change.
+- Assigning a speaker and then choosing Not dialogue for the same quotation counts as one Not dialogue decision.
+- Saving again without new changes gives no additional XP.
+- Correcting an earlier exported decision in a later batch can count as a correction.
 
-The selected quotation appears in the **Dialogue Focus** box on the left side of the interface.
+Canonical names, aliases, and metadata are useful edits and are saved, but they are not reward categories.
 
-This is the quotation you are currently editing.
+## 9. Send the work report
 
-## 5. Find and Assign the Speaker
+Click **Send report** in the export summary. Your name, filename, five counts, and effective work duration are submitted to the project's statistics spreadsheet. The fiction text and XML are not submitted.
 
-The **Select Speaker** panel appears directly below the selected quotation.
+Wait for confirmation. If the network fails or confirmation has not arrived, the report remains pending on your browser. Continue working if needed; open **Reports** later to find the pending batch and retry it. Retrying the same report does not add duplicate points.
 
-Start typing the person's name in the search field.
+Reports are sent only when you choose to send them. Closing a summary does not send its report. Saving XML and sending a report have separate statuses, so check both before finishing your work session.
 
-The search can match:
+If several batches are waiting, **Reports** offers a **Send … pending reports** button. Long or resumed sessions may include additional **0 XP** reports for earlier work; send those too. They preserve the work record without awarding extra annotation points or changing the next export's contribution counts.
 
-- the canonical name;
-- an alias;
-- the person's XML ID.
+The editor estimates effective work duration while you work, including reading and scrolling. It pauses for inactive/hidden pages, dialogs, and long idle periods. Duration is visible only in the administrator's work log. It is not shown in your summary or used in ranking.
 
-For example, if the same character has these names:
+Do not clear this website's browser data while reports are pending. A pending report is stored only in that browser until its submission is confirmed.
 
-```text
-Adolphus Irwine
-Mr. Irwine
-Mester Irwine
-```
+## 10. View the weekly leaderboard
 
-typing any of those forms can help locate the same person.
+The project administrator reviews and publishes a leaderboard for a completed week. A newly published board can appear when you next open the website. Use **Leaderboard** to reopen it.
 
-When you find the correct person, click that person's button.
+There is one leaderboard combining all five contribution categories. Each counted item is worth one point; tied scores share a rank. Work duration does not affect the ranking.
 
-The dialogue will be marked as resolved and the editor will move to another unresolved quotation.
+If no board is available yet, you can keep editing and submitting reports. Publishing the board is a separate weekly administrator step.
 
-## 6. Move to the Next Unresolved Dialogue
+## 11. Finish your session
 
-Use:
+1. Save the XML and confirm the local file is available.
+2. Review the export summary and click **Send report**.
+3. Confirm the report is sent, or leave it in **Reports** to retry later.
+4. Keep the latest `resolved_...xml` for your next session.
 
-**Skip / Next Unresolved →**
+The browser warns before leaving when it believes XML edits are unsaved. If you need to keep those changes, cancel navigation and save. For fallback downloads, the warning can remain because the editor cannot confirm the download finished; verify the file yourself before proceeding.
 
-This moves to the next unresolved quotation without assigning the current one.
+## Common questions
 
-Use this when you are unsure who is speaking and want to return to the quotation later.
+### I cannot find a speaker
 
-## 7. Add a Missing Person
-
-If the speaker does not exist in the character list, click:
-
-**+ Add Person / Alias**
-
-Choose **Create a new person**.
-
-Enter:
-
-- the person's canonical name;
-- sex/gender, if known.
-
-Then save the person.
-
-The new person will become available in the speaker list.
-
-Before creating a new person, search the existing names and aliases first so you do not accidentally create a duplicate character.
-
-## 8. Add a Missing Alias to an Existing Person
-
-Sometimes the person already exists, but the form of the name used in the text is missing.
-
-Click:
-
-**+ Add Person / Alias**
-
-Then choose **Add alias to an existing person**.
-
-1. Select the correct existing person.
-2. Enter the new alias.
-3. Click **Save**.
-
-If the current quotation already has a speaker, the editor may automatically select that person for you.
-
-## 9. Review Dialogue Metadata When Needed
-
-For the selected quotation, the interface may show:
-
-- `who`;
-- `cert`;
-- `source`;
-- `resp`.
-
-For normal editorial work, you usually only need to choose the correct speaker.
-
-Use **Enable Editing XML Attributes** only when you specifically need to change this additional metadata.
-
-After changing metadata, click **Save Attribute Changes**.
-
-## 10. How Manual Speaker Assignment Is Recorded
-
-When you choose a speaker manually, the editor marks the result as a human editorial decision.
-
-It records the dialogue as manually resolved rather than leaving the previous automated source information in place.
-
-You do not need to enter this information yourself; the editor handles it automatically when you assign the speaker.
-
-## 11. Export Your Work
-
-Click **Save XML** in the upper-right corner when you want to save your edits.
-
-The filename uses a single `_enriched` suffix: `story.xml` becomes `story_enriched.xml`, while `story_enriched.xml` stays `story_enriched.xml`. Repeated `_enriched` suffixes are removed.
-
-In supported Chromium browsers, a Save dialog lets you select the existing enriched file in your local folder and confirm replacement. The editor reuses this destination for subsequent saves during this session. Browsers without file-writing support download the enriched file instead; manually replace the previous local copy if needed.
-
-The exported file includes your committed edits, including:
-
-- canonical-name changes;
-- alias changes;
-- sex/gender changes;
-- newly added people;
-- dialogue speaker assignments;
-- dialogue metadata changes.
-
-## 12. Export Before Closing the Page
-
-Your edits are stored in the browser until you export them.
-
-If you have made changes since the last export and then try to:
-
-- close the tab;
-- reload the page;
-- navigate away;
-
-the browser will display a warning.
-
-If you want to keep your current work, cancel the close or reload action and click **Export XML** first.
-
-After exporting, the warning is cleared until you make another change.
-
-## 13. Recommended Workflow
-
-For a complete review session:
-
-1. Upload the XML file.
-2. Review character canonical names.
-3. Review aliases.
-4. Review unknown sex/gender values.
-5. Open **Dialogue Attribution**.
-6. Work through unresolved quotations.
-7. Search for the speaker by canonical name or alias.
-8. Add a missing alias when the person already exists.
-9. Add a new person only when necessary.
-10. Skip quotations you cannot confidently resolve.
-11. Export your XML regularly during a long editing session.
-12. Export once more before closing the editor.
-
-## 14. Common Problems
-
-### I cannot find the speaker
-
-Try searching by:
-
-- first name;
-- last name;
-- title;
-- nickname;
-- known alias.
-
-If the person exists but the name form is missing, add an alias rather than creating a duplicate person.
-
-### The person is not in the list at all
-
-Use **+ Add Person / Alias** and create a new person.
+Search by first name, last name, title, nickname, or alias. If the person exists but the name variant is missing, add an alias. Create a new person only when needed.
 
 ### The unresolved count did not change
 
-Selecting a quotation does not resolve it. You must click a speaker to assign that person to the quotation.
+Selecting a quotation does not resolve it. Choose its speaker, or use Not dialogue if it should not be a dialogue quotation. The unresolved badge and the export contribution counts measure different things.
 
-### I changed something but the original XML file did not change
+### My original file has not changed
 
-This is expected. The editor never overwrites the uploaded file.
+Loading a file grants read access. Save XML either writes to the destination you choose or downloads a new copy. Continue from the latest exported file.
 
-Click **Export XML** and use the downloaded `resolved_...xml` file.
+### The report is pending even though I clicked Send report
 
-### The browser warns me when I try to close the page
+The editor has not received confirmation for that exact batch yet. Retry it from **Reports** when the connection is available. Keep using the same browser; do not clear website data.
 
-You have made changes since your last export.
+### Can I recover my XML from the spreadsheet?
 
-If you want to keep those changes, stay on the page and export the XML before closing.
-
-### I am unsure who is speaking
-
-Do not guess. Use **Skip / Next Unresolved →** and return to the quotation later.
+No. The spreadsheet stores summary statistics, not the XML or story text. Keep the exported file.

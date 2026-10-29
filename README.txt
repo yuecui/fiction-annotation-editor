@@ -1,21 +1,34 @@
-Chrome scroll fix v3
+Fiction Annotation Editor — rewards and statistics update
 
-This version fixes the layout first, rather than only changing the scroll formula.
+Deploy the contents of this folder to the existing GitHub Pages source directory.
+Replace all application HTML, CSS, and JavaScript files together, including the
+new stats files. Keep the existing repository and its Pages settings.
 
-Important changes:
-1. The browser page itself is fixed to the viewport (h-screen / overflow hidden).
-2. #screen-editor and #view-dialogue are constrained flex containers.
-3. #reader-pane is the only right-side vertical scroll container.
-4. The old calc(100vh - 120px) + h-full nesting was removed.
-5. The split JavaScript files are actually loaded by index.html in this order:
-   core.js, characters.js, dialogue.js, app.js
-6. Dialogue scrolling uses the target/pane center delta and corrects once after Chrome paints.
+The deployed Google Apps Script /exec URL is already in stats-config.js.
+stats_backend/Code.gs is a copy of the receiving script already deployed.
+The frontend update does not require redeploying that unchanged script.
 
-Replace the corresponding files in the GitHub Pages repository.
-Then hard refresh Chrome (Cmd+Shift+R on macOS / Ctrl+Shift+R on Windows).
+After GitHub Pages publishes the update, hard refresh the website:
+macOS: Command + Shift + R
+Windows/Linux: Ctrl + Shift + R
 
-Character Gender page scroll fix
---------------------------------
-The app shell remains viewport-locked to preserve the working Chrome Dialogue
-Attribution behavior. The Character Gender view now has its own vertical
-scroll container, so ordinary mouse-wheel/trackpad scrolling works again.
+Editors enter their name once, load their XML, and work normally. Save XML opens
+a five-category summary. Send report submits the batch; Reports reopens pending
+and sent reports. Retrying a pending report does not give duplicate credit.
+Use the Send pending reports action when several batches are waiting. Long or
+resumed sessions can include 0 XP reports that retain earlier effective time.
+Those reports are not sent automatically and do not alter annotation counts.
+
+The XML filename keeps exactly one resolved_ prefix. Supported browsers can
+reuse a chosen local save destination. Other browsers start a download; verify
+the downloaded file before closing the page. Sending statistics does not upload
+or back up the XML.
+
+Each week, run prepareWeeklyLeaderboard() in Apps Script, review the previous
+week's draft in WeeklyLeaderboard, then set every approved row's published cell
+to TRUE. Work weeks use America/Chicago. Duration stays in WorkLog and is not
+ranked or shown to editors.
+
+Full editor instructions: EDITOR_GUIDE.md
+Administrator and weekly publication instructions: ADMIN_SETUP.md
+Developer overview and report/audit design: README.md

@@ -10,6 +10,7 @@
       charactersList.forEach(char => {
         const isUnresolved = char.gender === 'unknown';
         const card = document.createElement('div');
+        card.dataset.personId = char.rawId;
         card.className = isUnresolved
           ? "bg-amber-50/60 p-4 rounded-lg border-2 border-amber-300 shadow-sm transition-colors"
           : "bg-white p-4 rounded-lg border border-slate-200 shadow-sm transition-colors";
@@ -18,10 +19,10 @@
           ? char.aliases.map((alias, index) => `
               <div class="flex gap-2 items-center">
                 <input type="text" value="${escapeHtml(alias)}"
-                  onchange="updateCharacterAlias('${char.rawId}', ${index}, this.value)"
+                  data-alias-index="${index}"
                   class="flex-1 border border-slate-300 rounded px-2 py-1 text-xs bg-white"
                   aria-label="Alias ${index + 1} for ${escapeHtml(char.name)}">
-                <button type="button" onclick="removeCharacterAlias('${char.rawId}', ${index})"
+                <button type="button" data-remove-alias="${index}"
                   class="text-xs px-2 py-1 rounded bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100">Remove</button>
               </div>`).join('')
           : `<div class="text-xs text-slate-400 italic">No aliases.</div>`;
@@ -29,7 +30,7 @@
         card.innerHTML = `
           <div class="character-card-header flex items-center justify-between gap-3 mb-4">
             <span class="text-xs font-bold uppercase tracking-wide text-slate-500">Character</span>
-            <button type="button" onclick="removeCharacterCard('${char.rawId}')"
+            <button type="button" data-action="remove-person"
               class="text-xs px-3 py-1.5 rounded-md bg-white text-rose-700 border border-rose-200 hover:bg-rose-50 font-semibold transition-colors">
               Remove
             </button>
@@ -39,7 +40,7 @@
             <div class="min-w-0">
               <label class="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1">Canonical Name</label>
               <input type="text" value="${escapeHtml(char.name)}"
-                onchange="updateCanonicalName('${char.rawId}', this.value)"
+                data-field="canonical-name"
                 class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm font-semibold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <div class="text-xs text-slate-400 mt-1.5">ID: ${escapeHtml(char.id)}</div>
             </div>
@@ -49,12 +50,13 @@
                 <label class="text-xs font-bold uppercase tracking-wide text-slate-500">Sex / Gender</label>
                 ${isUnresolved ? '<span class="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide">Unresolved</span>' : ''}
               </div>
-              <select onchange="updateCharacterGender('${char.rawId}', this.value)"
+              <select data-field="gender"
                 class="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 shadow-sm">
                 <option value="unknown" ${char.gender === 'unknown' ? 'selected' : ''}>Unknown</option>
                 <option value="female" ${char.gender === 'female' ? 'selected' : ''}>Female</option>
                 <option value="male" ${char.gender === 'male' ? 'selected' : ''}>Male</option>
                 <option value="gender-ambiguous" ${(char.gender === 'gender-ambiguous' || char.gender === 'non-binary') ? 'selected' : ''}>Gender Ambiguous</option>
+                ${!['unknown', 'female', 'male', 'gender-ambiguous', 'non-binary'].includes(char.gender) ? `<option value="${escapeHtml(char.gender)}" selected>${escapeHtml(char.gender)}</option>` : ''}
               </select>
               ${char.sexNode?.getAttribute('source') ? `<div class="text-[10px] text-slate-400 mt-1.5">Source: ${escapeHtml(char.sexNode.getAttribute('source'))}</div>` : ''}
             </div>
@@ -64,13 +66,31 @@
             <div class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Aliases</div>
             <div class="space-y-2">${aliasRows}</div>
             <div class="flex gap-2 mt-3">
-              <input id="alias-add-${char.rawId}" type="text" placeholder="Add alias..."
+              <input data-field="new-alias" type="text" placeholder="Add alias..."
                 class="flex-1 min-w-0 border border-slate-300 rounded-md px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addAliasFromGenderCard('${char.rawId}'); }">
-              <button type="button" onclick="addAliasFromGenderCard('${char.rawId}')"
+                aria-label="New alias for ${escapeHtml(char.name)}">
+              <button type="button" data-action="add-alias"
                 class="shrink-0 text-xs px-3 py-2 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 font-semibold">+ Alias</button>
             </div>
           </div>`;
+        // IDs originate in XML and must never be interpolated into executable
+        // attributes or CSS selectors. Bind closures to this card instead.
+        card.querySelector('[data-action="remove-person"]').addEventListener('click', () => removeCharacterCard(char.rawId));
+        card.querySelector('[data-field="canonical-name"]').addEventListener('change', event => updateCanonicalName(char.rawId, event.target.value));
+        card.querySelector('[data-field="gender"]').addEventListener('change', event => updateCharacterGender(char.rawId, event.target.value));
+        card.querySelectorAll('[data-alias-index]').forEach(input => {
+          input.addEventListener('change', () => updateCharacterAlias(char.rawId, Number(input.dataset.aliasIndex), input.value));
+        });
+        card.querySelectorAll('[data-remove-alias]').forEach(button => {
+          button.addEventListener('click', () => removeCharacterAlias(char.rawId, Number(button.dataset.removeAlias)));
+        });
+        card.querySelector('[data-action="add-alias"]').addEventListener('click', () => addAliasFromGenderCard(char.rawId));
+        card.querySelector('[data-field="new-alias"]').addEventListener('keydown', event => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            addAliasFromGenderCard(char.rawId);
+          }
+        });
         container.appendChild(card);
       });
     }
@@ -83,7 +103,7 @@
       const speakerId = char.id;
       const affectedDialogues = [];
 
-      activeXmlDoc.querySelectorAll('q, quotation').forEach(node => {
+      AnnotationXml.elements(activeXmlDoc, 'q', 'quotation').forEach(node => {
         const whoTokens = (node.getAttribute('who') || '')
           .split(/\s+/)
           .filter(Boolean);
@@ -98,6 +118,7 @@
       message += '\n\nThis action will be included in the exported XML.';
 
       if (!window.confirm(message)) return;
+      commitOpenMetadata();
 
       // Any dialogue that points to the removed person must not retain a broken
       // #person-id reference. Return those quotations to the unresolved state.
@@ -107,17 +128,19 @@
         node.removeAttribute('cert');
         node.setAttribute('source', 'manual-editor');
         node.setAttribute('resp', 'manual-editor');
+        window.AnnotationStats?.ignoreAutomaticDialogueReset(AnnotationXml.id(node));
       });
 
       // Remove the actual <person> node from the source XML, not just the card.
       char.element.remove();
       charactersList.splice(charIndex, 1);
+      window.AnnotationStats?.touchGender(personId);
 
       // If the currently selected dialogue was affected, clear its selection so
       // the refreshed reader can safely select the next unresolved quotation.
       if (activeDialogueId) {
         const activeWasAffected = affectedDialogues.some(node => {
-          const id = node.getAttribute('xml:id') || node.getAttribute('id');
+          const id = AnnotationXml.id(node);
           return id === activeDialogueId;
         });
         if (activeWasAffected) activeDialogueId = null;
@@ -165,12 +188,13 @@
       }
       node.textContent = newName;
       char.name = newName;
+      markDirty();
       renderSpeakerButtons();
       populateAliasPersonSelect();
     }
 
     function getAliasNodes(char) {
-      return getDirectPersNames(char.element).filter(node => node !== char.canonicalNode && node.getAttribute('type') === 'alias');
+      return getDirectPersNames(char.element).filter(node => node !== char.canonicalNode && node.getAttribute('type') !== 'canonical');
     }
 
     function updateCharacterAlias(personId, aliasIndex, newAlias) {
@@ -186,6 +210,7 @@
       }
       node.textContent = value;
       char.aliases[aliasIndex] = value;
+      markDirty();
       renderSpeakerButtons();
     }
 
@@ -205,6 +230,7 @@
       else char.element.appendChild(node);
 
       char.aliases.push(value);
+      markDirty();
       renderGenderStep();
       renderSpeakerButtons();
       populateAliasPersonSelect(char.rawId);
@@ -212,7 +238,9 @@
     }
 
     function addAliasFromGenderCard(personId) {
-      const input = document.getElementById(`alias-add-${personId}`);
+      const card = Array.from(document.querySelectorAll('#gender-cards-container [data-person-id]'))
+        .find(element => element.dataset.personId === personId);
+      const input = card?.querySelector('[data-field="new-alias"]');
       if (!input) return;
       if (addAliasToCharacter(personId, input.value)) input.value = '';
     }
@@ -222,8 +250,10 @@
       if (!char) return;
       const aliasNodes = getAliasNodes(char);
       const node = aliasNodes[aliasIndex];
-      if (node) node.remove();
+      if (!node) return;
+      node.remove();
       char.aliases.splice(aliasIndex, 1);
+      markDirty();
       renderGenderStep();
       renderSpeakerButtons();
     }
@@ -244,6 +274,8 @@
         char.sexNode = sexNode;
     }
     sexNode.setAttribute('value', newGender);
+    markDirty();
+    window.AnnotationStats?.touchGender(personId);
 
     // Refresh card styling and badge count
     renderGenderStep();

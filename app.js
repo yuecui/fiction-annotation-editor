@@ -1,4 +1,5 @@
     function switchStep(step) {
+      if (typeof commitOpenMetadata === 'function') commitOpenMetadata();
       const genderTab = document.getElementById('tab-gender');
       const dialogueTab = document.getElementById('tab-dialogue');
 
@@ -40,54 +41,33 @@
       return `resolved_${filename.replace(/^(?:resolved_)+/i, '')}`;
     }
 
+    let xmlExportInProgress = false;
+
     async function exportUpdatedXML() {
-      if (!activeXmlDoc) return;
+      if (!activeXmlDoc || xmlExportInProgress) return;
+      xmlExportInProgress = true;
+      const editor = document.getElementById('screen-editor');
+      const button = document.getElementById('export-xml-button');
+      let transaction = null;
+      let fileOperationCompleted = false;
 
-      // If the metadata editor is currently open, treat the visible field values
-      // as the user's latest edit and write them to the XML before exporting.
-      const metaEditForm = document.getElementById('meta-edit-form');
-      if (activeDialogueId && metaEditForm && !metaEditForm.classList.contains('hidden')) {
-        const xmlNode = getActiveDialogueXmlNode();
-        if (xmlNode) {
-          const fields = [
-            ['cert', document.getElementById('input-meta-cert').value.trim()],
-            ['source', document.getElementById('input-meta-source').value.trim()],
-            ['resp', document.getElementById('input-meta-resp').value.trim()]
-          ];
+      try {
+        // Flush a still-focused text field, then commit metadata to the quote
+        // that actually owns its form before freezing the XML and work totals.
+        if (document.activeElement && editor.contains(document.activeElement)) document.activeElement.blur();
+        if (typeof commitOpenMetadata === 'function') commitOpenMetadata();
+        const outputName = getResolvedFilename(fileName);
+        transaction = window.AnnotationStats ? AnnotationStats.prepareExport(outputName) : null;
+        const exportDoc = transaction ? transaction.exportDoc : activeXmlDoc.cloneNode(true);
+        const xmlString = AnnotationXml.serialize(exportDoc, { usedSyntheticRoot, originalHadXmlDeclaration });
+        const blob = new Blob([xmlString], { type: 'application/xml;charset=utf-8' });
+        editor.inert = true;
+        button.disabled = true;
+        button.querySelector('span').textContent = 'Saving…';
 
-          fields.forEach(([attribute, value]) => {
-            if (value) xmlNode.setAttribute(attribute, value);
-            else xmlNode.removeAttribute(attribute);
-          });
-        }
-      }
-
-      const serializer = new XMLSerializer();
-      let xmlString;
-
-      // Only remove <root> when this application added it as a temporary wrapper.
-      // A genuine <root> element from the user's source file must be preserved.
-      if (usedSyntheticRoot && activeXmlDoc.documentElement.tagName === 'root') {
-        xmlString = Array.from(activeXmlDoc.documentElement.childNodes)
-          .map(node => serializer.serializeToString(node))
-          .join('');
-      } else {
-        xmlString = serializer.serializeToString(activeXmlDoc);
-      }
-
-      // DOMParser/XMLSerializer does not reliably retain the XML declaration.
-      // Restore one when the uploaded document originally contained it.
-      if (originalHadXmlDeclaration && !xmlString.trimStart().startsWith('<?xml')) {
-        xmlString = `<?xml version="1.0" encoding="UTF-8"?>\n${xmlString}`;
-      }
-
-      const blob = new Blob([xmlString], { type: "application/xml;charset=utf-8" });
-      const outputName = getResolvedFilename(fileName);
-
-      // The upload <input> only grants read access. A browser cannot silently
-      // overwrite the uploaded file; the editor must ask for write permission.
-      if (typeof window.showSaveFilePicker === 'function') {
-        try {
+        if (typeof window.showSaveFilePicker === 'function') {
+          // Keep this call inside the original click's user activation. No
+          // network request or asynchronous hashing precedes the save picker.
           if (!savedXmlFileHandle) {
             savedXmlFileHandle = await window.showSaveFilePicker({
               suggestedName: outputName,
@@ -95,30 +75,45 @@
             });
           }
           const writable = await savedXmlFileHandle.createWritable();
-          await writable.write(blob);
-          await writable.close();
-          // The handle remembers the selected destination for subsequent saves.
+          try {
+            await writable.write(blob);
+            await writable.close();
+          } catch (error) {
+            if (typeof writable.abort === 'function') { try { await writable.abort(); } catch (_) {} }
+            throw error;
+          }
+          fileOperationCompleted = true;
           fileName = savedXmlFileHandle.name;
+          document.getElementById('file-status').textContent = fileName;
           markClean();
-          return;
-        } catch (error) {
-          // Cancellation and permission failures must not falsely mark edits saved.
-          if (error.name === 'AbortError') return;
-          console.error('XML save failed:', error);
-          alert(`Could not save XML: ${error.message || error}`);
-          return;
+          if (transaction) { transaction.outputName = fileName; await AnnotationStats.completeExport(transaction, 'saved'); }
+        } else {
+          const objectUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = objectUrl;
+          link.download = outputName;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+          fileOperationCompleted = true;
+          // A download can be initiated but its completion cannot be observed.
+          // Preserve the original unsaved-work warning in this browser path.
+          if (transaction) await AnnotationStats.completeExport(transaction, 'download');
         }
+      } catch (error) {
+        if (!fileOperationCompleted && window.AnnotationStats) AnnotationStats.cancelExport(transaction);
+        if (error.name !== 'AbortError') {
+          console.error('XML export failed:', error);
+          alert(fileOperationCompleted
+            ? 'The XML export completed, but its work summary could not be opened. Your recoverable report will remain in this browser.'
+            : `Could not save XML: ${error.message || error}`);
+        }
+      } finally {
+        editor.inert = false;
+        button.disabled = false;
+        button.querySelector('span').textContent = 'Save XML';
+        xmlExportInProgress = false;
+        if (window.AnnotationStats) AnnotationStats.resume('export');
       }
-
-      // Fallback for Safari/Firefox and contexts without the File System Access API.
-      // Browsers decide whether an existing download is replaced or renamed.
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = objectUrl;
-      link.download = outputName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-      // Download initiation does not confirm the file was saved/replaced.
     }

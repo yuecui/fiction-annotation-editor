@@ -1,34 +1,77 @@
     function renderReaderStep() {
       const readerContent = document.getElementById('reader-content');
+      const readerPane = document.getElementById('reader-pane');
+      const previousScroll = readerPane?.scrollTop || 0;
       readerContent.innerHTML = '';
-      let paragraphs = activeXmlDoc.querySelectorAll('p');
-      if (paragraphs.length === 0) paragraphs = [activeXmlDoc.documentElement];
+      const bodies = AnnotationXml.elements(activeXmlDoc, 'body');
+      const texts = AnnotationXml.elements(activeXmlDoc, 'text');
+      const candidates = bodies.length ? bodies : texts.length ? texts : [activeXmlDoc.documentElement];
+      const readingRoots = candidates.filter(candidate => !candidates.some(other =>
+        other !== candidate && other.contains(candidate)));
+      const blockTags = new Set(['body', 'text', 'div', 'chapter', 'section', 'lg', 'l']);
 
-      paragraphs.forEach(p => {
-        const pElem = document.createElement('p');
-        p.childNodes.forEach(node => {
-          if (node.nodeType === Node.TEXT_NODE) {
-            pElem.appendChild(document.createTextNode(node.textContent));
-          } else if (node.nodeName === 'q' || node.nodeName === 'quotation') {
-            const qElem = document.createElement('q');
-            const qId = node.getAttribute('xml:id') || node.getAttribute('id');
-            const who = node.getAttribute('who') || '#unknown';
-            const isUnresolved = who === '#unknown';
-
-            qElem.setAttribute('data-xml-id', qId);
-            qElem.textContent = node.textContent;
-            qElem.className = isUnresolved ? 'dialogue-unresolved' : 'dialogue-resolved';
-            qElem.onclick = () => selectDialogue(qId);
-            pElem.appendChild(qElem);
-          } else {
-            const span = document.createElement('span');
-            span.textContent = node.textContent;
-            pElem.appendChild(span);
+      function appendReadingNode(node, target) {
+        if (node.nodeType === Node.TEXT_NODE || node.nodeType === Node.CDATA_SECTION_NODE) {
+          target.appendChild(document.createTextNode(node.textContent));
+          return;
+        }
+        // Comments contain local audit JSON, and processing instructions are
+        // not story text. Neither should ever be displayed to an annotator.
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        const tag = node.localName || node.nodeName.split(':').pop();
+        if (['teiHeader', 'listPerson', 'person', 'standOff', 'facsimile'].includes(tag)) return;
+        let element;
+        if (tag === 'q' || tag === 'quotation') {
+          element = document.createElement('q');
+          const quoteId = AnnotationXml.id(node);
+          element.dataset.xmlId = quoteId;
+          element.className = isUnknownSpeaker(node.getAttribute('who')) ? 'dialogue-unresolved' : 'dialogue-resolved';
+          if (quoteId === activeDialogueId) element.classList.add('dialogue-active');
+          element.tabIndex = 0;
+          element.setAttribute('role', 'button');
+          element.setAttribute('aria-label', `Review quotation: ${(node.textContent || '').slice(0, 160)}`);
+          element.addEventListener('click', event => {
+            event.stopPropagation();
+            selectDialogue(quoteId);
+          });
+          element.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              event.stopPropagation();
+              selectDialogue(quoteId);
+            }
+          });
+        } else if (tag === 'lb') {
+          element = document.createElement('br');
+        } else {
+          element = document.createElement(tag === 'p' ? 'p' : tag === 'head' ? 'h3' : blockTags.has(tag) ? 'div' : 'span');
+          if (tag === 'hi') {
+            const rendition = node.getAttribute('rend') || '';
+            if (/italic/i.test(rendition)) element.style.fontStyle = 'italic';
+            if (/bold/i.test(rendition)) element.style.fontWeight = 'bold';
           }
-        });
-        readerContent.appendChild(pElem);
-      });
+        }
+        Array.from(node.childNodes).forEach(child => appendReadingNode(child, element));
+        target.appendChild(element);
+      }
+
+      readingRoots.forEach(readingRoot => appendReadingNode(readingRoot, readerContent));
+      if (readerPane) readerPane.scrollTop = previousScroll;
       renderSpeakerButtons();
+    }
+
+    function isUnknownSpeaker(value) {
+      return !String(value || '').trim() || /^#?unknown$/i.test(String(value).trim());
+    }
+
+    function findReaderDialogueById(xmlId) {
+      return Array.from(document.querySelectorAll('#reader-content q[data-xml-id]'))
+        .find(element => element.dataset.xmlId === xmlId) || null;
+    }
+
+    function findXmlDialogueById(xmlId) {
+      return AnnotationXml.elements(activeXmlDoc, 'q', 'quotation')
+        .find(node => AnnotationXml.id(node) === xmlId) || null;
     }
 
     function renderSpeakerButtons() {
@@ -101,12 +144,14 @@
     }
 
     function selectDialogue(xmlId) {
-      document.querySelectorAll('q.dialogue-active').forEach(el => {
+      const targetElem = findReaderDialogueById(xmlId);
+      if (!targetElem) return;
+      commitOpenMetadata();
+      document.querySelectorAll('#reader-content q.dialogue-active').forEach(el => {
         el.classList.remove('dialogue-active');
       });
 
       activeDialogueId = xmlId;
-      const targetElem = document.querySelector(`q[data-xml-id="${xmlId}"]`);
       if (targetElem) {
         targetElem.classList.add('dialogue-active');
 
@@ -121,14 +166,9 @@
     }
 
     function displayDialogueMetadata(xmlId) {
-      document.getElementById('dialogue-metadata-card').classList.remove('hidden');
-      let xmlNode = null;
-      activeXmlDoc.querySelectorAll('q, quotation').forEach(node => {
-        const id = node.getAttribute('xml:id') || node.getAttribute('id');
-        if (id === xmlId) xmlNode = node;
-      });
-
+      const xmlNode = findXmlDialogueById(xmlId);
       if (!xmlNode) return;
+      document.getElementById('dialogue-metadata-card').classList.remove('hidden');
       const who = xmlNode.getAttribute('who') || '#unknown';
       const speakerChar = charactersList.find(c => c.id === who);
       
@@ -140,7 +180,8 @@
     }
 
     function focusNextUnresolved() {
-      const allDialogues = Array.from(document.querySelectorAll('q[data-xml-id]'));
+      commitOpenMetadata();
+      const allDialogues = Array.from(document.querySelectorAll('#reader-content q[data-xml-id]'));
       const unresolvedElements = allDialogues.filter(el => el.classList.contains('dialogue-unresolved'));
 
       if (unresolvedElements.length === 0) {
@@ -168,6 +209,7 @@
     }
 
     function focusPreviousUnresolved() {
+      commitOpenMetadata();
       const unresolvedElements = Array.from(
         document.querySelectorAll('#reader-content q[data-xml-id].dialogue-unresolved')
       );
@@ -205,38 +247,44 @@
 
     function assignSpeakerToActiveDialogue(speakerId) {
       if (!activeDialogueId) return;
+      const xmlNode = getActiveDialogueXmlNode();
+      if (!xmlNode || (!charactersList.some(character => character.id === speakerId) && speakerId !== '#unknown')) return;
+      commitOpenMetadata();
+      const quoteId = activeDialogueId;
 
       // Update HTML DOM
-      const htmlElem = document.querySelector(`q[data-xml-id="${activeDialogueId}"]`);
+      const htmlElem = findReaderDialogueById(quoteId);
       if (htmlElem) {
-        htmlElem.classList.remove('dialogue-unresolved');
-        htmlElem.classList.add('dialogue-resolved');
+        htmlElem.classList.toggle('dialogue-unresolved', isUnknownSpeaker(speakerId));
+        htmlElem.classList.toggle('dialogue-resolved', !isUnknownSpeaker(speakerId));
       }
 
       // Update Source XML
-      activeXmlDoc.querySelectorAll('q, quotation').forEach(xmlNode => {
-        const id = xmlNode.getAttribute('xml:id') || xmlNode.getAttribute('id');
-        if (id === activeDialogueId) {
-          xmlNode.setAttribute('who', speakerId);
-          xmlNode.setAttribute('ana', '#speaker-resolved');
+      xmlNode.setAttribute('who', speakerId);
+      const annotations = (xmlNode.getAttribute('ana') || '').split(/\s+/).filter(token => token && token !== '#speaker-resolved');
+      if (!isUnknownSpeaker(speakerId)) annotations.push('#speaker-resolved');
+      if (annotations.length) xmlNode.setAttribute('ana', annotations.join(' '));
+      else xmlNode.removeAttribute('ana');
 
-          // This assignment was explicitly made by a person in this editor.
-          // Remove any stale automated confidence and provenance values so the
-          // exported XML does not imply that the enrichment script made it.
-          xmlNode.removeAttribute('cert');
-          xmlNode.setAttribute('source', 'manual-editor');
-          xmlNode.setAttribute('resp', 'manual-editor');
-        }
-      });
-
+      // This assignment was explicitly made by a person in this editor.
+      xmlNode.removeAttribute('cert');
+      xmlNode.setAttribute('source', 'manual-editor');
+      xmlNode.setAttribute('resp', 'manual-editor');
+      markDirty();
+      window.AnnotationStats?.touchDialogue(quoteId);
       updateBadges();
       focusNextUnresolved();
     }
 
     function markActiveQuotationNotDialogue() {
+      commitOpenMetadata();
       const xmlNode = getActiveDialogueXmlNode();
       if (!xmlNode) {
         alert('Select a quotation first.');
+        return;
+      }
+      if (xmlNode === activeXmlDoc.documentElement) {
+        alert('This quotation is the XML document root. Put it inside a containing story element before marking it as not dialogue, so the exported file keeps a valid root.');
         return;
       }
 
@@ -249,21 +297,21 @@
 
       // Remember the next unresolved quotation before changing the XML so the
       // editor can continue from the same point in the document.
-      const dialogueNodes = Array.from(activeXmlDoc.querySelectorAll('q, quotation'));
+      const dialogueNodes = AnnotationXml.elements(activeXmlDoc, 'q', 'quotation');
       const currentIndex = dialogueNodes.indexOf(xmlNode);
       let nextUnresolvedId = null;
       for (let i = currentIndex + 1; i < dialogueNodes.length; i++) {
         const who = dialogueNodes[i].getAttribute('who') || '#unknown';
-        if (who === '#unknown') {
-          nextUnresolvedId = dialogueNodes[i].getAttribute('xml:id') || dialogueNodes[i].getAttribute('id');
+        if (isUnknownSpeaker(who)) {
+          nextUnresolvedId = AnnotationXml.id(dialogueNodes[i]);
           if (nextUnresolvedId) break;
         }
       }
       if (!nextUnresolvedId) {
         for (let i = 0; i < currentIndex; i++) {
           const who = dialogueNodes[i].getAttribute('who') || '#unknown';
-          if (who === '#unknown') {
-            nextUnresolvedId = dialogueNodes[i].getAttribute('xml:id') || dialogueNodes[i].getAttribute('id');
+          if (isUnknownSpeaker(who)) {
+            nextUnresolvedId = AnnotationXml.id(dialogueNodes[i]);
             if (nextUnresolvedId) break;
           }
         }
@@ -273,6 +321,13 @@
       // same position, then remove only the quotation element itself.
       const parent = xmlNode.parentNode;
       if (!parent) return;
+      try {
+        if (window.AnnotationStats) window.AnnotationStats.excludeQuotation(xmlNode);
+        else AnnotationXml.addExclusion(activeXmlDoc, xmlNode, { excluded_at: new Date().toISOString() });
+      } catch (error) {
+        alert(`The quotation was kept because its review record could not be saved: ${error?.message || error}`);
+        return;
+      }
       while (xmlNode.firstChild) {
         parent.insertBefore(xmlNode.firstChild, xmlNode);
       }
@@ -285,7 +340,7 @@
       document.getElementById('dialogue-metadata-card').classList.add('hidden');
       document.getElementById('selected-dialogue-preview').textContent = 'Quotation marked as not dialogue. Its text was preserved.';
 
-      if (nextUnresolvedId && document.querySelector(`q[data-xml-id="${nextUnresolvedId}"]`)) {
+      if (nextUnresolvedId && findReaderDialogueById(nextUnresolvedId)) {
         selectDialogue(nextUnresolvedId);
       } else {
         focusNextUnresolved();
@@ -294,27 +349,32 @@
 
     function getActiveDialogueXmlNode() {
       if (!activeDialogueId) return null;
-
-      return Array.from(activeXmlDoc.querySelectorAll('q, quotation')).find(node => {
-        const id = node.getAttribute('xml:id') || node.getAttribute('id');
-        return id === activeDialogueId;
-      }) || null;
+      return findXmlDialogueById(activeDialogueId);
     }
 
     function enableTwoStepEditing() {
+      commitOpenMetadata();
       const xmlNode = getActiveDialogueXmlNode();
       if (!xmlNode) return;
 
       document.getElementById('input-meta-cert').value = xmlNode.getAttribute('cert') || '';
       document.getElementById('input-meta-source').value = xmlNode.getAttribute('source') || '';
       document.getElementById('input-meta-resp').value = xmlNode.getAttribute('resp') || '';
+      document.getElementById('meta-edit-form').dataset.quoteId = AnnotationXml.id(xmlNode);
       document.getElementById('meta-edit-form').classList.remove('hidden');
       document.getElementById('btn-toggle-edit').classList.add('hidden');
     }
 
     function saveAdvancedMetadata() {
-      const xmlNode = getActiveDialogueXmlNode();
-      if (!xmlNode) return;
+      commitOpenMetadata();
+    }
+
+    function commitOpenMetadata() {
+      const form = document.getElementById('meta-edit-form');
+      if (!form || form.classList.contains('hidden')) return false;
+      const originId = form.dataset.quoteId;
+      const xmlNode = originId ? findXmlDialogueById(originId) : null;
+      let changed = false;
 
       const fields = [
         ['cert', document.getElementById('input-meta-cert').value.trim()],
@@ -323,23 +383,26 @@
       ];
 
       fields.forEach(([attribute, value]) => {
+        if (!xmlNode) return;
+        const prior = xmlNode.getAttribute(attribute) || '';
+        if (prior === value) return;
         if (value) xmlNode.setAttribute(attribute, value);
         else xmlNode.removeAttribute(attribute);
+        changed = true;
       });
 
-      displayDialogueMetadata(activeDialogueId);
-      document.getElementById('meta-edit-form').classList.add('hidden');
+      if (changed) markDirty();
+      form.classList.add('hidden');
+      delete form.dataset.quoteId;
       document.getElementById('btn-toggle-edit').classList.remove('hidden');
+      if (xmlNode && activeDialogueId === originId) displayDialogueMetadata(originId);
+      return changed;
     }
 
     function getActiveDialogueSpeakerRawId() {
       if (!activeDialogueId) return null;
-      let who = null;
-      activeXmlDoc.querySelectorAll('q, quotation').forEach(node => {
-        const id = node.getAttribute('xml:id') || node.getAttribute('id');
-        if (id === activeDialogueId) who = node.getAttribute('who');
-      });
-      if (!who || who === '#unknown') return null;
+      const who = getActiveDialogueXmlNode()?.getAttribute('who');
+      if (isUnknownSpeaker(who)) return null;
       return who.replace(/^#/, '');
     }
 
@@ -434,11 +497,15 @@
 
       let newId = baseId;
       let suffix = 2;
-      while (charactersList.some(char => char.rawId === newId)) {
+      const usedIds = new Set(AnnotationXml.elements(activeXmlDoc).flatMap(node =>
+        [node.getAttribute('xml:id'), node.getAttribute('id')].filter(Boolean)));
+      AnnotationXml.readExclusions(activeXmlDoc).forEach(record => usedIds.add(record.quote_id));
+      while (usedIds.has(newId)) {
         newId = `${baseId}-${suffix++}`;
       }
 
-      const xmlNamespace = activeXmlDoc.documentElement.namespaceURI;
+      let listPerson = AnnotationXml.elements(activeXmlDoc, 'listPerson')[0] || null;
+      const xmlNamespace = listPerson?.namespaceURI || charactersList[0]?.element.namespaceURI || activeXmlDoc.documentElement.namespaceURI;
       const createXmlElement = (tagName) => xmlNamespace
         ? activeXmlDoc.createElementNS(xmlNamespace, tagName)
         : activeXmlDoc.createElement(tagName);
@@ -456,7 +523,6 @@
       sex.setAttribute('source', '#manual-editor');
       person.appendChild(sex);
 
-      let listPerson = activeXmlDoc.querySelector('listPerson');
       if (!listPerson) {
         listPerson = createXmlElement('listPerson');
         activeXmlDoc.documentElement.appendChild(listPerson);
@@ -473,6 +539,8 @@
         canonicalNode: persName,
         sexNode: sex
       });
+      markDirty();
+      window.AnnotationStats?.touchGender(newId);
 
       nameInput.value = '';
       genderInput.value = 'unknown';

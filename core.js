@@ -108,45 +108,56 @@ let activeXmlDoc = null;
     });
     let usedSyntheticRoot = false;
     let originalHadXmlDeclaration = false;
+    let xmlLoadRequest = 0;
 
-    document.getElementById('xml-input').addEventListener('change', function(e) {
+    document.getElementById('xml-input').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
-
-      fileName = file.name;
-      savedXmlFileHandle = null;
-      document.getElementById('file-status').textContent = fileName;
-      
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        let rawContent = evt.target.result;
-        const trimmedContent = rawContent.trim();
-        originalHadXmlDeclaration = trimmedContent.startsWith('<?xml');
-        usedSyntheticRoot = !originalHadXmlDeclaration && !trimmedContent.startsWith('<root');
-
-        if (usedSyntheticRoot) {
-          rawContent = `<root>${rawContent}</root>`;
-        }
-
-        const parser = new DOMParser();
-        activeXmlDoc = parser.parseFromString(rawContent, "text/xml");
-
-        // Ensure all quote tags have valid XML IDs
-        let idCounter = 1;
-        activeXmlDoc.querySelectorAll('q, quotation').forEach(node => {
-          let id = node.getAttribute('xml:id') || node.getAttribute('id');
-          if (!id) {
-            id = `auto-q-${idCounter++}`;
-            node.setAttribute('xml:id', id);
-          }
-        });
-
+      const request = ++xmlLoadRequest;
+      const errorBox = document.getElementById('upload-error');
+      const editor = document.getElementById('screen-editor');
+      errorBox.classList.add('hidden');
+      errorBox.textContent = '';
+      try {
+        const rawContent = await file.text();
+        if (request !== xmlLoadRequest) return;
+        const parsed = AnnotationXml.parse(rawContent);
+        AnnotationXml.ensureIds(parsed.doc);
+        AnnotationXml.getDocumentRecord(parsed.doc);
+        AnnotationXml.readBatches(parsed.doc);
+        // Validate first, so an unreadable replacement cannot destroy the
+        // document that is already open in this tab.
+        if (activeXmlDoc && hasUnsavedChanges && !window.confirm('Open another XML file? Export your current edits first if you want to keep them.')) return;
+        activeXmlDoc = parsed.doc;
+        fileName = file.name;
+        savedXmlFileHandle = null;
+        usedSyntheticRoot = parsed.usedSyntheticRoot;
+        originalHadXmlDeclaration = parsed.originalHadXmlDeclaration;
+        activeDialogueId = null;
+        document.getElementById('file-status').textContent = fileName;
+        document.getElementById('speaker-search').value = '';
+        document.getElementById('new-character-form').classList.add('hidden');
+        document.getElementById('dialogue-metadata-card').classList.add('hidden');
+        document.getElementById('meta-edit-form').classList.add('hidden');
+        delete document.getElementById('meta-edit-form').dataset.quoteId;
+        document.getElementById('btn-toggle-edit').classList.remove('hidden');
+        document.getElementById('selected-dialogue-preview').textContent = 'Select a highlighted quotation to begin.';
+        editor.inert = true;
         document.getElementById('screen-upload').classList.add('hidden');
-        document.getElementById('screen-editor').classList.remove('hidden');
+        editor.classList.remove('hidden');
         initializeData();
+        switchStep('gender');
         markClean();
-      };
-      reader.readAsText(file);
+        if (window.AnnotationStats) await window.AnnotationStats.beginDocument(activeXmlDoc, { fileName, rawContent });
+      } catch (error) {
+        const message = error?.message || 'The XML file could not be opened.';
+        errorBox.textContent = message;
+        errorBox.classList.remove('hidden');
+        if (document.getElementById('screen-upload').classList.contains('hidden')) alert(message);
+      } finally {
+        if (request === xmlLoadRequest) editor.inert = false;
+        e.target.value = '';
+      }
     });
 
     function getDirectPersNames(person) {
@@ -155,9 +166,9 @@ let activeXmlDoc = null;
 
     function initializeData() {
       charactersList = [];
-      const personNodes = activeXmlDoc.querySelectorAll('person');
+      const personNodes = AnnotationXml.elements(activeXmlDoc, 'person');
       personNodes.forEach(person => {
-        const id = person.getAttribute('xml:id') || person.getAttribute('id') || `char-${Math.random()}`;
+        const id = AnnotationXml.id(person);
         const persNames = getDirectPersNames(person);
         const canonicalNode = persNames.find(node => node.getAttribute('type') === 'canonical') || persNames[0] || null;
         const name = canonicalNode?.textContent.trim() || id;
@@ -169,7 +180,8 @@ let activeXmlDoc = null;
         const sexNode = Array.from(person.children).find(child => child.localName === 'sex' || child.nodeName === 'sex') || null;
         let gender = 'unknown';
         if (sexNode) {
-          gender = sexNode.getAttribute('value') || sexNode.textContent.trim().toLowerCase() || 'unknown';
+          gender = (sexNode.getAttribute('value') || sexNode.textContent || 'unknown').trim().toLowerCase() || 'unknown';
+          if (gender === '#unknown') gender = 'unknown';
         }
 
         charactersList.push({

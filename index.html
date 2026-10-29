@@ -4,15 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fiction XML Dialogue & Gender Resolver</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="vendor/tailwind.css?v=20261029-1">
+  <link rel="stylesheet" href="styles.css?v=20261029-1">
+  <link rel="stylesheet" href="rewards.css?v=20261029-1">
 </head>
 <body class="bg-slate-100 min-h-screen flex flex-col font-sans">
 
   <header class="bg-slate-800 text-white p-4 shadow-md flex justify-between items-center shrink-0">
     <h1 class="text-xl font-bold tracking-wide">Fiction Text Editor</h1>
-    <div class="flex items-center gap-4">
+    <div class="stats-header-actions">
       <div id="file-status" class="text-sm text-slate-300">No file loaded</div>
+      <button type="button" class="stats-toolbar-button" id="stats-reports-button">Reports<span id="stats-pending-count" class="stats-count-badge" hidden>0</span></button>
+      <button type="button" class="stats-toolbar-button" id="stats-leaderboard-button">Leaderboard</button>
       <a
         href="help.html"
         target="_blank"
@@ -24,6 +27,7 @@
       </a>
     </div>
   </header>
+  <div id="stats-notice" class="stats-notice" role="status" hidden></div>
 
   <div id="screen-upload" class="flex-1 flex flex-col items-center justify-center p-6">
     <div class="bg-white p-8 rounded-xl shadow-md max-w-md w-full text-center border border-slate-200">
@@ -31,7 +35,7 @@
         <h2 class="text-2xl font-bold text-slate-800">Upload XML File</h2>
         <button type="button" class="feature-help-btn" onclick="showFeatureHelp(event, 'upload')" aria-label="Help for uploading XML">?</button>
       </div>
-      <p class="text-slate-500 text-sm mb-4">Select or drop a story XML file to begin resolving unknown genders and dialogue speakers.</p>
+      <p class="text-slate-500 text-sm mb-4">Select a story XML file to begin resolving unknown genders and dialogue speakers.</p>
       <div id="upload-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg text-left overflow-auto max-h-32"></div>
       <input type="file" id="xml-input" accept=".xml" class="hidden">
       <button onclick="document.getElementById('xml-input').click()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-6 rounded-lg shadow">
@@ -57,7 +61,7 @@
 
       <div class="flex items-center gap-2">
         <button type="button" class="feature-help-btn" onclick="showFeatureHelp(event, 'export')" aria-label="Help for exporting XML">?</button>
-        <button type="button" onclick="exportUpdatedXML()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg flex items-center space-x-2 text-sm shadow">
+        <button id="export-xml-button" type="button" onclick="exportUpdatedXML()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg flex items-center space-x-2 text-sm shadow">
           <span>Save XML</span>
         </button>
       </div>
@@ -221,9 +225,15 @@
     </div>
   </div>
 
-  <script src="core.js?v=20261006-2"></script>
-  <script src="characters.js?v=20261006-2"></script>
-  <script src="dialogue.js?v=20261006-2"></script>
-  <script src="app.js?v=20261006-2"></script>
+  <dialog id="stats-dialog" class="stats-modal" aria-labelledby="stats-dialog-title"></dialog>
+  <script src="stats-config.js?v=20261029-1"></script>
+  <script src="stats-engine.js?v=20261029-1"></script>
+  <script src="stats-service.js?v=20261029-1"></script>
+  <script src="annotation-xml.js?v=20261029-1"></script>
+  <script src="core.js?v=20261029-1"></script>
+  <script src="characters.js?v=20261029-1"></script>
+  <script src="dialogue.js?v=20261029-1"></script>
+  <script src="app.js?v=20261029-1"></script>
+  <script src="stats-controller.js?v=20261029-1"></script>
 </body>
 </html>
